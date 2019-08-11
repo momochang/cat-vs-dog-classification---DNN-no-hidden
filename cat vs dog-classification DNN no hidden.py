@@ -1,120 +1,49 @@
-import gc
 import numpy as np
 import tensorflow as tf
-import cv2
-import os
 import matplotlib.pyplot as plt
-import matplotlib.image as image
 import random
-import time
+import cv2
+import preprocessing as ps
 
+array_of_img = ps.array_of_img
+test_of_img = ps.test_of_img
 
-def gen_label(img):
-    try:
-        label = img.split('.')[-3]
-    except:
-        label = None
-    finally:
-        if label == 'cat':
-            return [1, 0]
-        elif label == 'dog':
-            return [0, 1]
-        else:
-            return [0, 0]
+def read_data():
+    print('----------------------------')
+    print('cats train_data loading', end = '')
+    data = ps.read_directory(array_image = array_of_img, directory_name = 'D:/deep-learning/images/dataset/training_set/cats')
+    ps.time_sleep()
+    print('----------------------------')
+    print('dogs train_data loading', end = '')
+    datasets = ps.read_directory(array_image = array_of_img, directory_name = 'D:/deep-learning/images/dataset/training_set/dogs')
+    ps.time_sleep()
+    print('----------------------------')
+    print('cats test_data loading', end = '')
+    test_data = ps.read_directory(array_image = test_of_img, directory_name = 'D:/deep-learning/images/dataset/test_set/cats')
+    ps.time_sleep()
+    print('----------------------------')
+    print('dogs test_data loading', end = '')
+    test_datasets = ps.read_directory(array_image = test_of_img, directory_name = 'D:/deep-learning/images/dataset/test_set/dogs')
+    ps.time_sleep()
+    print('----------------------------')
+    print('clean memeory space')
+    return (data, datasets, test_data, test_datasets)
 
-def read_directory(**kwargs):
-
-    for filename in os.listdir(kwargs['directory_name']):
-        #if (filename == '')
-        label = gen_label(filename)
-        img = cv2.imread(kwargs['directory_name'] + "/" + filename)
-        if img is None:
-            pass
-        else:
-            kwargs['array_image'].append([img, np.array(label)])
-
-    return np.array(kwargs['array_image'])
-
-
-def display_one(a, title1 = "Original"):
-    plt.imshow(a)
-    plt.title(title1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.show()
-
-def display(a, b, title1 = "Original", title2 = "Edited"):
-    plt.subplot(121)
-    plt.imshow(a)
-    plt.title(title1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.subplot(122)
-    plt.imshow(b)
-    plt.title(title2)
-    plt.show()
-
-
-def time_sleep():
-    for i in range(5):
-        time.sleep(1)
-        print('.', end = '')
-    print()
-
-#release memory space 
-def release_memory():
-    array_of_img.clear()
-    test_of_img.clear()
-    datasets = None
-    test_datasets = None
-    return datasets, test_datasets
-
-
-def print_sizeofmemory():
-    print(gc.collect())
-
-## 1. read datas that each data has three-dimension (height, width, RGB) 
-#Global variable
-array_of_img = []
-test_of_img = []
-
-print('----------------------------')
-print('cats train_data loading', end = '')
-data = read_directory(array_image = array_of_img, directory_name = 'D:/deep-learning/images/dataset/training_set/cats')
-time_sleep()
-print('----------------------------')
-print('dogs train_data loading', end = '')
-datasets = read_directory(array_image = array_of_img, directory_name = 'D:/deep-learning/images/dataset/training_set/dogs')
-time_sleep()
-print('----------------------------')
-print('cats test_data loading', end = '')
-test_data = read_directory(array_image = test_of_img, directory_name = 'D:/deep-learning/images/dataset/test_set/cats')
-time_sleep()
-print('----------------------------')
-print('dogs test_data loading', end = '')
-test_datasets = read_directory(array_image = test_of_img, directory_name = 'D:/deep-learning/images/dataset/test_set/dogs')
-time_sleep()
-print('----------------------------')
-print('clean memeory space')
-
-
+train_cat, train_dog, test_cat, test_dog = read_data()
 
 #data = np.reshape(data, (data.shape[0], data[0][0].shape[0], data[0][0].shape[1], data[0][0].shape[2]))
 
-type(data)
-print(data.shape)
+type(train_cat)
+print(train_cat.shape)
 #print(data[0][0].shape)
-
-random.shuffle(datasets)
-random.shuffle(test_datasets)
-datasets.shape
-test_datasets.shape
+train_data = np.vstack((train_cat, train_dog))
+test_data = np.vstack((test_cat, test_dog))
 
 
 ## 3. distribution train, valid and test data
-train_image, train_label = (datasets[:, 0], datasets[:, 1])
-valid_image, valid_label = (test_datasets[:1000, 0], test_datasets[:1000, 1])
-test_image, test_label = (test_datasets[1000:, 0], test_datasets[1000:, 1])
+train_image, train_label = (train_data[:, 0], train_data[:, 1])
+valid_image, valid_label = (test_data[:2000, 0], test_data[:2000, 1])
+test_image, test_label = (test_data[2000:, 0], test_data[2000:, 1])
 print('train_image shape: ',train_image.shape)
 print('valid_image shape: ',valid_image.shape)
 print('test_image shape: ',test_image.shape)
@@ -122,40 +51,16 @@ print('train_label shape: ',train_label.shape)
 print('valid_label shape: ',valid_label.shape)
 print('test_label shape: ',test_label.shape)
 
-datasets, test_datasets = release_memory()
+#clean memory
+#ps.release_memory(array_of_img, test_of_img, train_cat, train_dog, test_cat, test_dog)
 
-## 2. resize each data
-def processing(data, lab):
-    #img = [cv2.imread(i, cv2.IMREAD_UNCHANGED) for i in data[:3]]
-    
-    print('The Second Original size', data[1].shape)
-    height = 50
-    width = 50
-    dim = (width, height)
-    res_img = []
-    res_lab = []
-    for i in range(len(data)):
-        res = cv2.resize(data[i], dim, interpolation = cv2.INTER_LINEAR)
-        res_img.append(res)
-        res_lab.append(lab[i])
-        
-    print("The Second Resized size", res_img[1].shape)
-    resized = res_img[1]
-    display(data[1], resized, 'Originial', 'Resized')
-    return np.array(res_img), np.array(res_lab)
+train_image, train_label = ps.processing(train_image, train_label)
+valid_image, valid_label = ps.processing(valid_image, valid_label)
+test_image, test_label = ps.processing(test_image, test_label)
 
-
-def normalization(img):
-    img = img / 255.
-    return img
-
-train_image, train_label = processing(train_image, train_label)
-valid_image, valid_label = processing(valid_image, valid_label)
-test_image, test_label = processing(test_image, test_label)
-
-train_image = normalization(train_image)
-valid_image = normalization(valid_image)
-test_image = normalization(test_image)
+train_image = ps.normalization(train_image)
+valid_image = ps.normalization(valid_image)
+test_image = ps.normalization(test_image)
 
 
 print('train_image shape: ', train_image.shape)
@@ -380,7 +285,7 @@ def fit(X, y, epochs = 10, learning_rate = 1e-3, valid_data = None, test_data = 
 
 dic_ans = fit(X = train_image,
               y = train_label,
-              epochs = 100,
+              epochs = 10,
               learning_rate = learning_rate,
               valid_data = (valid_image, valid_label),
               test_data = (test_image, test_label))
